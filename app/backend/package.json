@@ -7,7 +7,7 @@
     "start": "node src/server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
     "@azure/identity": "^4.4.1",
