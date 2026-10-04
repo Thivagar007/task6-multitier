@@ -9,3 +9,5 @@ build/
 *.tfvars
 !example.tfvars
 crash.log
+
+tfplan
