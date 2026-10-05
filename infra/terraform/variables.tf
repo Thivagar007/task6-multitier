@@ -41,3 +41,8 @@ variable "allowed_client_ip" {
   type        = string
   default     = null
 }
+
+variable "apim_publisher_email" {
+  description = "Email APIM uses for system notifications (required by APIM)"
+  type        = string
+}

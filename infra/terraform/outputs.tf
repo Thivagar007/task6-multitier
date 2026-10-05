@@ -65,3 +65,18 @@ output "apps" {
 output "traffic_manager_fqdn" {
   value = module.traffic_manager.fqdn
 }
+
+output "apim_api_base_url" {
+  description = "VITE_API_BASE_URL"
+  value       = module.apim.api_base_url
+}
+
+output "entra" {
+  description = "Values for the React build (.env.production) and token tests"
+  value = {
+    tenant_id     = module.entra.tenant_id
+    spa_client_id = module.entra.spa_client_id
+    api_client_id = module.entra.api_client_id
+    api_scope     = module.entra.api_scope
+  }
+}

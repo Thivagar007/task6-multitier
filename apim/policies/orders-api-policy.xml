@@ -1,0 +1,79 @@
+<!--
+  =====================================================================
+  Orders API - API-level policy (Azure API Management)
+  Rendered by Terraform (templatefile) - values in $${...} are injected.
+
+  inbound order matters:
+    1. cors          answer browser preflight (OPTIONS) before auth
+    2. validate-jwt  OAuth 2.0: only Azure AD tokens issued for THIS API,
+                     from THIS tenant, carrying scope Orders.Read
+    3. rate limit    per caller IP, protects the backend
+    4. backend       route to Traffic Manager (80/20 across regions)
+  =====================================================================
+-->
+<policies>
+  <inbound>
+    <base />
+
+    <cors allow-credentials="false">
+      <allowed-origins>
+%{ for origin in allowed_origins ~}
+        <origin>${origin}</origin>
+%{ endfor ~}
+      </allowed-origins>
+      <allowed-methods>
+        <method>GET</method>
+        <method>OPTIONS</method>
+      </allowed-methods>
+      <allowed-headers>
+        <header>Authorization</header>
+        <header>Content-Type</header>
+      </allowed-headers>
+      <expose-headers>
+        <header>X-App-Region</header>
+        <header>X-App-Slot</header>
+        <header>X-App-Version</header>
+      </expose-headers>
+    </cors>
+
+    <validate-jwt header-name="Authorization" require-scheme="Bearer"
+                  failed-validation-httpcode="401"
+                  failed-validation-error-message="Unauthorized: a valid Azure AD access token for the Orders API is required.">
+      <openid-config url="https://login.microsoftonline.com/${tenant_id}/v2.0/.well-known/openid-configuration" />
+      <audiences>
+        <audience>${api_client_id}</audience>
+        <audience>api://${api_client_id}</audience>
+      </audiences>
+      <issuers>
+        <issuer>https://login.microsoftonline.com/${tenant_id}/v2.0</issuer>
+        <issuer>https://sts.windows.net/${tenant_id}/</issuer>
+      </issuers>
+      <required-claims>
+        <claim name="scp" match="any" separator=" ">
+          <value>${scope_name}</value>
+        </claim>
+      </required-claims>
+    </validate-jwt>
+
+    <rate-limit-by-key calls="100" renewal-period="60"
+                       counter-key="@(context.Request.IpAddress)" />
+
+    <set-backend-service backend-id="orders-tm-backend" />
+    <set-header name="X-Forwarded-By" exists-action="override">
+      <value>apim</value>
+    </set-header>
+  </inbound>
+
+  <backend>
+    <base />
+  </backend>
+
+  <outbound>
+    <base />
+    <set-header name="X-Powered-By" exists-action="delete" />
+  </outbound>
+
+  <on-error>
+    <base />
+  </on-error>
+</policies>

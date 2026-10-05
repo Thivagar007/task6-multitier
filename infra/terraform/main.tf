@@ -6,7 +6,9 @@
 #   modules/data          -> Key Vault, Storage, SQL + least-privilege access
 #   modules/regional-app  -> per region: plan, apps, slots, autoscale (for_each)
 #   modules/traffic-manager -> weighted DNS routing across regional backends
-#   (next) modules/front-door, modules/apim
+#   modules/entra-apps    -> Azure AD app registrations (API + SPA) for OAuth 2.0
+#   modules/apim          -> API Management: validate-jwt, CORS, rate limit -> Traffic Manager
+#   (next) modules/front-door
 # =====================================================================
 
 # ---------- Resource groups ----------
@@ -107,4 +109,51 @@ module "traffic_manager" {
       weight             = local.regions[k].weight # cin 80, sin 20 (locals.tf)
     }
   }
+}
+
+# ---------- Entra ID app registrations (OAuth 2.0) ----------
+
+module "entra" {
+  source = "./modules/entra-apps"
+
+  name_prefix = var.project
+  name_suffix = local.suffix
+
+  spa_redirect_uris = concat(
+    [for r in module.region : "https://${r.frontend_hostname}/"],
+    [for r in module.region : "https://${r.frontend_staging_hostname}/"],
+    ["http://localhost:8080/"]
+  )
+}
+
+# ---------- API Management (OAuth 2.0 gateway in front of Traffic Manager) ----------
+
+locals {
+  frontend_origins = concat(
+    [for r in module.region : "https://${r.frontend_hostname}"],
+    [for r in module.region : "https://${r.frontend_staging_hostname}"],
+    ["http://localhost:8080", "http://127.0.0.1:8080"]
+  )
+}
+
+module "apim" {
+  source = "./modules/apim"
+
+  name                = "apim-${var.project}-${local.suffix}"
+  location            = azurerm_resource_group.shared.location
+  resource_group_name = azurerm_resource_group.shared.name
+  tags                = local.tags
+
+  publisher_name  = "Task6 Orders"
+  publisher_email = var.apim_publisher_email
+
+  backend_url                = "https://${module.traffic_manager.fqdn}"
+  log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
+
+  api_policy_xml = templatefile("${path.root}/../../apim/policies/orders-api-policy.xml", {
+    tenant_id       = module.entra.tenant_id
+    api_client_id   = module.entra.api_client_id
+    scope_name      = module.entra.scope_name
+    allowed_origins = local.frontend_origins
+  })
 }
