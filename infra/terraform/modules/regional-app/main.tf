@@ -92,6 +92,8 @@ resource "azurerm_linux_web_app" "backend" {
     ignore_changes = [
       app_settings["APP_VERSION"],
       app_settings["FAIL_HEALTH"],
+      # Added by the Azure portal when App Insights is opened from the app blade
+      tags["hidden-link: /app-insights-resource-id"],
     ]
   }
 }
@@ -127,6 +129,8 @@ resource "azurerm_linux_web_app_slot" "backend_staging" {
     ignore_changes = [
       app_settings["APP_VERSION"],
       app_settings["FAIL_HEALTH"],
+      # Added by the Azure portal when App Insights is opened from the app blade
+      tags["hidden-link: /app-insights-resource-id"],
     ]
   }
 }
@@ -303,10 +307,12 @@ locals {
 resource "azurerm_monitor_diagnostic_setting" "apps" {
   for_each = local.diag_targets
 
-  name                           = "diag-to-law"
-  target_resource_id             = each.value
-  log_analytics_workspace_id     = var.log_analytics_workspace_id
-  log_analytics_destination_type = "Dedicated" # AppServiceHTTPLogs etc. instead of AzureDiagnostics
+  # App Service logs always land in resource-specific tables (AppServiceHTTPLogs...),
+  # so log_analytics_destination_type is not set: Azure does not store it for
+  # App Service and Terraform would show a change on every plan.
+  name                       = "diag-to-law"
+  target_resource_id         = each.value
+  log_analytics_workspace_id = var.log_analytics_workspace_id
 
   enabled_log {
     category = "AppServiceHTTPLogs" # every request: status, latency, client IP
