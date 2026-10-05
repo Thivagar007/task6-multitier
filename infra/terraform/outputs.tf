@@ -101,3 +101,9 @@ output "grafana_url" {
 output "grafana_name" {
   value = module.grafana.name
 }
+
+output "frontend_custom_domain_verification_ids" {
+  description = "TXT record values (asuid.<sub>) needed before adding a custom domain"
+  value       = { for k, m in module.region : k => m.frontend_custom_domain_verification_id }
+  sensitive   = true
+}

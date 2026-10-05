@@ -35,3 +35,13 @@ output "frontend_hostname" {
 output "frontend_staging_hostname" {
   value = azurerm_linux_web_app_slot.frontend_staging.default_hostname
 }
+
+output "frontend_custom_domain_verification_id" {
+  description = "Value for the asuid.<sub> TXT record when adding a custom domain"
+  value       = azurerm_linux_web_app.frontend.custom_domain_verification_id
+  sensitive   = true
+}
+
+output "frontend_custom_domain" {
+  value = var.custom_domain
+}

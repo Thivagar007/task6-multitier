@@ -94,3 +94,10 @@ variable "app_insights_connection_string" {
 variable "log_analytics_workspace_id" {
   type = string
 }
+
+# ---------- Optional custom domain (managed certificate) ----------
+variable "custom_domain" {
+  description = "Custom hostname for the frontend (e.g. app.example.com). null = no custom domain / no managed cert."
+  type        = string
+  default     = null
+}

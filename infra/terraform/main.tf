@@ -94,6 +94,9 @@ module "region" {
 
   app_insights_connection_string = module.monitoring.app_insights_connection_string
   log_analytics_workspace_id     = module.monitoring.log_analytics_workspace_id
+
+  # Optional: custom domain + free managed certificate (null = none)
+  custom_domain = lookup(var.frontend_custom_domains, each.key, null)
 }
 
 # ---------- Traffic Manager: weighted 80/20 across the regional backends ----------
@@ -125,6 +128,7 @@ module "entra" {
     ["https://${module.front_door.endpoint_hostname}/"],
     [for r in module.region : "https://${r.frontend_hostname}/"],
     [for r in module.region : "https://${r.frontend_staging_hostname}/"],
+    [for d in values(var.frontend_custom_domains) : "https://${d}/"],
     ["http://localhost:8080/"]
   )
 }
@@ -136,6 +140,7 @@ locals {
     ["https://${module.front_door.endpoint_hostname}"],
     [for r in module.region : "https://${r.frontend_hostname}"],
     [for r in module.region : "https://${r.frontend_staging_hostname}"],
+    [for d in values(var.frontend_custom_domains) : "https://${d}"],
     ["http://localhost:8080", "http://127.0.0.1:8080"]
   )
 }

@@ -52,3 +52,9 @@ variable "frontdoor_sku" {
   type        = string
   default     = "Standard_AzureFrontDoor"
 }
+
+variable "frontend_custom_domains" {
+  description = "Optional custom domain per region for the frontend app, e.g. { cin = \"app.example.com\" }. Empty = no managed certificates (lab default)."
+  type        = map(string)
+  default     = {}
+}
