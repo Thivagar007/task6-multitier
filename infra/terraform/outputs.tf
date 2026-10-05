@@ -47,3 +47,17 @@ output "sql_server_fqdn" {
 output "sql_database_name" {
   value = module.data.sql_database_name
 }
+
+output "apps" {
+  description = "Per-region app names and hostnames"
+  value = {
+    for k, r in module.region : k => {
+      backend          = r.backend_name
+      backend_url      = "https://${r.backend_hostname}"
+      backend_staging  = "https://${r.backend_staging_hostname}"
+      frontend         = r.frontend_name
+      frontend_url     = "https://${r.frontend_hostname}"
+      frontend_staging = "https://${r.frontend_staging_hostname}"
+    }
+  }
+}

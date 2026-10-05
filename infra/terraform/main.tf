@@ -4,7 +4,7 @@
 #   modules/monitoring    -> Log Analytics + Application Insights
 #   modules/identity      -> backend user-assigned managed identity
 #   modules/data          -> Key Vault, Storage, SQL + least-privilege access
-#   (next) modules/regional-app   -> per region: plan, apps, slots, autoscale (for_each)
+#   modules/regional-app  -> per region: plan, apps, slots, autoscale (for_each)
 #   (next) modules/traffic-manager, modules/front-door, modules/apim
 # =====================================================================
 
@@ -63,4 +63,30 @@ module "data" {
   deployer_login       = var.deployer_login
   backend_principal_id = module.backend_identity.principal_id
   allowed_client_ip    = var.allowed_client_ip
+}
+
+# ---------- Regional app stacks (one per region) ----------
+
+module "region" {
+  source   = "./modules/regional-app"
+  for_each = local.regions # cin = Central India (primary), sin = South India
+
+  region_key          = each.key
+  location            = each.value.location
+  resource_group_name = azurerm_resource_group.region[each.key].name
+  name_prefix         = var.project
+  name_suffix         = local.suffix
+  tags                = local.tags
+
+  backend_identity_id        = module.backend_identity.id
+  backend_identity_client_id = module.backend_identity.client_id
+
+  key_vault_uri          = module.data.key_vault_uri
+  storage_account_url    = module.data.storage_account_url
+  storage_container_name = module.data.storage_container_name
+  sql_server_fqdn        = module.data.sql_server_fqdn
+  sql_database_name      = module.data.sql_database_name
+
+  app_insights_connection_string = module.monitoring.app_insights_connection_string
+  log_analytics_workspace_id     = module.monitoring.log_analytics_workspace_id
 }
