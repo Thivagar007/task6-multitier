@@ -1,0 +1,20 @@
+{
+  "name": "orders-backend",
+  "version": "1.0.0",
+  "description": "Node.js API for the Task 6 multi-tier app",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.4.1",
+    "@azure/keyvault-secrets": "^4.8.0",
+    "@azure/storage-blob": "^12.24.0",
+    "applicationinsights": "^3.3.0",
+    "express": "^4.21.0",
+    "mssql": "^11.0.1"
+  }
+}
