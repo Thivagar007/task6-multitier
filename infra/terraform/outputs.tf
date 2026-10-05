@@ -93,3 +93,11 @@ output "rollback" {
     alerts             = module.rollback.alert_names
   }
 }
+
+output "grafana_url" {
+  value = module.grafana.endpoint
+}
+
+output "grafana_name" {
+  value = module.grafana.name
+}

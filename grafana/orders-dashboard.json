@@ -1,0 +1,599 @@
+{
+  "title": "Orders API - Requests, Latency, Errors",
+  "uid": "task6-orders",
+  "description": "Task 6: backend request count, latency p50/p95 and HTTP error rate from Application Insights (Azure Monitor data source)",
+  "tags": [
+    "task6",
+    "app-service",
+    "azure-monitor"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "1m",
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "ds",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "grafana-azure-monitor-datasource",
+        "hide": 0,
+        "refresh": 1,
+        "current": {}
+      },
+      {
+        "name": "workspace",
+        "label": "Log Analytics workspace",
+        "type": "constant",
+        "query": "__LAW_RESOURCE_ID__",
+        "hide": 2
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total requests",
+      "description": "All backend requests in the selected time range (both regions)",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${ds}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "AppRequests\n| where $__timeFilter(TimeGenerated)\n| where AppRoleName startswith 'app-task6-api'\n| summarize Requests = count()",
+            "resources": [
+              "$workspace"
+            ],
+            "resultFormat": "table"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Latency p50",
+      "description": "Median server-side duration",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${ds}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "AppRequests\n| where $__timeFilter(TimeGenerated)\n| where AppRoleName startswith 'app-task6-api'\n| summarize p50 = percentile(DurationMs, 50)",
+            "resources": [
+              "$workspace"
+            ],
+            "resultFormat": "table"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Latency p95",
+      "description": "95th percentile server-side duration",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${ds}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "AppRequests\n| where $__timeFilter(TimeGenerated)\n| where AppRoleName startswith 'app-task6-api'\n| summarize p95 = percentile(DurationMs, 95)",
+            "resources": [
+              "$workspace"
+            ],
+            "resultFormat": "table"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 500
+              },
+              {
+                "color": "red",
+                "value": 1000
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "HTTP error rate (5xx)",
+      "description": "Share of requests that returned HTTP 5xx",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${ds}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "AppRequests\n| where $__timeFilter(TimeGenerated)\n| where AppRoleName startswith 'app-task6-api'\n| summarize ErrorRate = 100.0 * countif(toint(ResultCode) >= 500) / count()",
+            "resources": [
+              "$workspace"
+            ],
+            "resultFormat": "table"
+          }
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "decimals": 2
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Request count per region",
+      "description": "Requests per interval, split by region (Traffic Manager 80/20)",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${ds}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "AppRequests\n| where $__timeFilter(TimeGenerated)\n| where AppRoleName startswith 'app-task6-api'\n| extend Region = iff(AppRoleName contains '-cin-', 'Central India', 'South India')\n| summarize Requests = count() by bin(TimeGenerated, $__interval), Region\n| order by TimeGenerated asc",
+            "resources": [
+              "$workspace"
+            ],
+            "resultFormat": "time_series"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Latency p50 / p95",
+      "description": "Server-side request duration percentiles",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${ds}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "AppRequests\n| where $__timeFilter(TimeGenerated)\n| where AppRoleName startswith 'app-task6-api'\n| summarize p50 = percentile(DurationMs, 50), p95 = percentile(DurationMs, 95) by bin(TimeGenerated, $__interval)\n| order by TimeGenerated asc",
+            "resources": [
+              "$workspace"
+            ],
+            "resultFormat": "time_series"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "HTTP error rate (5xx %) per region",
+      "description": "Percentage of 5xx responses per interval",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${ds}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "AppRequests\n| where $__timeFilter(TimeGenerated)\n| where AppRoleName startswith 'app-task6-api'\n| extend Region = iff(AppRoleName contains '-cin-', 'Central India', 'South India')\n| summarize ErrorRate = 100.0 * countif(toint(ResultCode) >= 500) / count() by bin(TimeGenerated, $__interval), Region\n| order by TimeGenerated asc",
+            "resources": [
+              "$workspace"
+            ],
+            "resultFormat": "time_series"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Requests by HTTP status code",
+      "description": "200 vs 4xx vs 5xx over time",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${ds}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "AppRequests\n| where $__timeFilter(TimeGenerated)\n| where AppRoleName startswith 'app-task6-api'\n| summarize Requests = count() by bin(TimeGenerated, $__interval), Status = tostring(ResultCode)\n| order by TimeGenerated asc",
+            "resources": [
+              "$workspace"
+            ],
+            "resultFormat": "time_series"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Endpoints: volume, p95 latency, errors",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${ds}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${ds}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "AppRequests\n| where $__timeFilter(TimeGenerated)\n| where AppRoleName startswith 'app-task6-api'\n| extend Path = coalesce(tostring(parse_url(Url).Path), tostring(Properties['url.path']), tostring(Properties['http.target']), tostring(Properties['http.route']), OperationName)\n| extend Path = tostring(split(Path, '?')[0])\n| extend Endpoint = iff(Path startswith Name, Path, strcat(Name, ' ', Path))\n| summarize Requests = count(), p95_ms = round(percentile(DurationMs, 95), 0), Errors_5xx = countif(toint(ResultCode) >= 500) by Endpoint\n| extend ErrorRate_pct = round(100.0 * Errors_5xx / Requests, 2)\n| order by Requests desc",
+            "resources": [
+              "$workspace"
+            ],
+            "resultFormat": "table"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      }
+    }
+  ]
+}

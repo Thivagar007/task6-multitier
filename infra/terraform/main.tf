@@ -10,6 +10,7 @@
 #   modules/apim          -> API Management: validate-jwt, CORS, rate limit -> Traffic Manager
 #   modules/front-door    -> Front Door Standard: CDN (cached assets) + WAF policy
 #   modules/rollback      -> availability tests -> alert -> Automation runbook slot swap-back
+#   modules/grafana       -> Azure Managed Grafana (Monitoring Reader via managed identity)
 # =====================================================================
 
 # ---------- Resource groups ----------
@@ -205,4 +206,21 @@ module "rollback" {
   }
 
   runbook_content = file("${path.root}/../../scripts/rollback/Invoke-AutoRollback.ps1")
+}
+
+# ---------- Azure Managed Grafana (Azure Monitor data source via managed identity) ----------
+
+module "grafana" {
+  source = "./modules/grafana"
+
+  name                = "amg-${var.project}-${local.suffix}"
+  location            = azurerm_resource_group.shared.location
+  resource_group_name = azurerm_resource_group.shared.name
+  tags                = local.tags
+  admin_object_id     = data.azurerm_client_config.current.object_id
+
+  reader_scopes = merge(
+    { shared = azurerm_resource_group.shared.id },
+    { for k, rg in azurerm_resource_group.region : k => rg.id }
+  )
 }

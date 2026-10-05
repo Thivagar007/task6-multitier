@@ -51,11 +51,9 @@ resource "azurerm_application_insights_standard_web_test" "health" {
     ssl_cert_remaining_lifetime = 7
   }
 
-  # App Insights links tests to the component via this tag; setting it
-  # ourselves avoids a perpetual diff.
-  tags = merge(var.tags, {
-    "hidden-link:${var.app_insights_id}" = "Resource"
-  })
+  # The test is linked to App Insights via application_insights_id.
+  # (Azure did not keep a "hidden-link" tag here, so we don't set one.)
+  tags = var.tags
 }
 
 # ---------------------------------------------------------------------
@@ -93,6 +91,12 @@ resource "azurerm_automation_runbook" "rollback" {
   description             = "Swaps staging back into production when the availability alert fires"
   content                 = var.runbook_content
   tags                    = var.tags
+
+  # Azure reports PowerShell 7.2 runbooks back as "PowerShell", which would
+  # force a delete/recreate (and break the webhooks) on every plan.
+  lifecycle {
+    ignore_changes = [runbook_type]
+  }
 }
 
 # Webhook URLs must have an expiry; 1 year is plenty for this project
