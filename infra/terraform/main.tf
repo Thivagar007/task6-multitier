@@ -8,7 +8,8 @@
 #   modules/traffic-manager -> weighted DNS routing across regional backends
 #   modules/entra-apps    -> Azure AD app registrations (API + SPA) for OAuth 2.0
 #   modules/apim          -> API Management: validate-jwt, CORS, rate limit -> Traffic Manager
-#   (next) modules/front-door
+#   modules/front-door    -> Front Door Standard: CDN (cached assets) + WAF policy
+#   modules/rollback      -> availability tests -> alert -> Automation runbook slot swap-back
 # =====================================================================
 
 # ---------- Resource groups ----------
@@ -120,6 +121,7 @@ module "entra" {
   name_suffix = local.suffix
 
   spa_redirect_uris = concat(
+    ["https://${module.front_door.endpoint_hostname}/"],
     [for r in module.region : "https://${r.frontend_hostname}/"],
     [for r in module.region : "https://${r.frontend_staging_hostname}/"],
     ["http://localhost:8080/"]
@@ -130,6 +132,7 @@ module "entra" {
 
 locals {
   frontend_origins = concat(
+    ["https://${module.front_door.endpoint_hostname}"],
     [for r in module.region : "https://${r.frontend_hostname}"],
     [for r in module.region : "https://${r.frontend_staging_hostname}"],
     ["http://localhost:8080", "http://127.0.0.1:8080"]
@@ -156,4 +159,50 @@ module "apim" {
     scope_name      = module.entra.scope_name
     allowed_origins = local.frontend_origins
   })
+}
+
+# ---------- Front Door: CDN + WAF in front of the regional frontends ----------
+
+module "front_door" {
+  source = "./modules/front-door"
+
+  name_prefix         = var.project
+  name_suffix         = local.suffix
+  resource_group_name = azurerm_resource_group.shared.name
+  tags                = local.tags
+  sku_name            = var.frontdoor_sku
+
+  origins = {
+    for k, r in module.region : k => {
+      host_name = r.frontend_hostname
+      weight    = local.regions[k].weight
+    }
+  }
+
+  log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
+}
+
+# ---------- Automatic rollback: availability tests -> alert -> runbook swap ----------
+
+module "rollback" {
+  source = "./modules/rollback"
+
+  name_prefix         = var.project
+  name_suffix         = local.suffix
+  location            = azurerm_resource_group.shared.location
+  resource_group_name = azurerm_resource_group.shared.name
+  tags                = local.tags
+  app_insights_id     = module.monitoring.app_insights_id
+  notify_email        = var.apim_publisher_email
+
+  backends = {
+    for k, r in module.region : k => {
+      app_id              = r.backend_id
+      app_name            = r.backend_name
+      resource_group_name = azurerm_resource_group.region[k].name
+      hostname            = r.backend_hostname
+    }
+  }
+
+  runbook_content = file("${path.root}/../../scripts/rollback/Invoke-AutoRollback.ps1")
 }

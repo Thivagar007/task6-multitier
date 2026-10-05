@@ -46,3 +46,9 @@ variable "apim_publisher_email" {
   description = "Email APIM uses for system notifications (required by APIM)"
   type        = string
 }
+
+variable "frontdoor_sku" {
+  description = "Standard_AzureFrontDoor or Premium_AzureFrontDoor"
+  type        = string
+  default     = "Standard_AzureFrontDoor"
+}

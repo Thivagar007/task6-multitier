@@ -80,3 +80,16 @@ output "entra" {
     api_scope     = module.entra.api_scope
   }
 }
+
+output "front_door_url" {
+  description = "Public entry point for users"
+  value       = "https://${module.front_door.endpoint_hostname}"
+}
+
+output "rollback" {
+  value = {
+    automation_account = module.rollback.automation_account_name
+    web_tests          = module.rollback.web_test_names
+    alerts             = module.rollback.alert_names
+  }
+}
