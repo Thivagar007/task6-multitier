@@ -17,7 +17,8 @@ const msal = authEnabled
       auth: {
         clientId: CLIENT_ID,
         authority: `https://login.microsoftonline.com/${TENANT_ID}`,
-        redirectUri: window.location.origin,
+        // Must match the SPA redirect URIs registered in Entra (with trailing slash)
+        redirectUri: window.location.origin + "/",
       },
       cache: { cacheLocation: "sessionStorage" },
     })
