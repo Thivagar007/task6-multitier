@@ -24,7 +24,7 @@ resource "azurerm_key_vault" "this" {
   resource_group_name        = var.resource_group_name
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   sku_name                   = "standard"
-  enable_rbac_authorization  = true  # Azure RBAC instead of legacy access policies
+  rbac_authorization_enabled = true # Azure RBAC instead of legacy access policies
   soft_delete_retention_days = 7
   purge_protection_enabled   = false # lab: allows clean destroy/recreate
   tags                       = var.tags
@@ -95,12 +95,11 @@ resource "azurerm_key_vault_secret" "app_message" {
 }
 
 resource "azurerm_storage_blob" "sample" {
-  name                   = "welcome.txt"
-  storage_account_name   = azurerm_storage_account.this.name
-  storage_container_name = azurerm_storage_container.documents.name
-  type                   = "Block"
-  source_content         = "Sample document served via managed identity (Storage Blob Data Reader)."
-  depends_on             = [time_sleep.wait_for_deployer_rbac]
+  name                 = "welcome.txt"
+  storage_container_id = azurerm_storage_container.documents.id
+  type                 = "Block"
+  source_content       = "Sample document served via managed identity (Storage Blob Data Reader)."
+  depends_on           = [time_sleep.wait_for_deployer_rbac]
 }
 
 # ---------------------------------------------------------------------

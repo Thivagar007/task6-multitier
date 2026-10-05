@@ -1,6 +1,7 @@
 -- =====================================================================
 -- Run ONCE as the Entra admin (you) against database sqldb-task6
 -- (Azure Portal > SQL database > Query editor > sign in with Entra ID)
+-- No GO separators: the portal Query editor runs the whole script as one batch
 --
 -- 1. Creates the demo table + sample rows
 -- 2. Creates a DB user for the backend MANAGED IDENTITY and gives it
@@ -23,15 +24,12 @@ BEGIN
         (N'Meena V',     780.25),
         (N'Rahul D',    1999.99);
 END;
-GO
 
 -- The name must match the managed identity's name exactly
 IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'id-task6-backend')
     CREATE USER [id-task6-backend] FROM EXTERNAL PROVIDER;
-GO
 
 ALTER ROLE db_datareader ADD MEMBER [id-task6-backend];
-GO
 
 -- Verify: should list id-task6-backend with role db_datareader
 SELECT dp.name AS principal, r.name AS role
@@ -39,4 +37,3 @@ FROM sys.database_role_members rm
 JOIN sys.database_principals dp ON rm.member_principal_id = dp.principal_id
 JOIN sys.database_principals r  ON rm.role_principal_id   = r.principal_id
 WHERE dp.name = N'id-task6-backend';
-GO
