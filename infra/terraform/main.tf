@@ -5,7 +5,8 @@
 #   modules/identity      -> backend user-assigned managed identity
 #   modules/data          -> Key Vault, Storage, SQL + least-privilege access
 #   modules/regional-app  -> per region: plan, apps, slots, autoscale (for_each)
-#   (next) modules/traffic-manager, modules/front-door, modules/apim
+#   modules/traffic-manager -> weighted DNS routing across regional backends
+#   (next) modules/front-door, modules/apim
 # =====================================================================
 
 # ---------- Resource groups ----------
@@ -89,4 +90,21 @@ module "region" {
 
   app_insights_connection_string = module.monitoring.app_insights_connection_string
   log_analytics_workspace_id     = module.monitoring.log_analytics_workspace_id
+}
+
+# ---------- Traffic Manager: weighted 80/20 across the regional backends ----------
+
+module "traffic_manager" {
+  source = "./modules/traffic-manager"
+
+  name                = "tm-${var.project}-api-${local.suffix}"
+  resource_group_name = azurerm_resource_group.shared.name
+  tags                = local.tags
+
+  endpoints = {
+    for k, r in module.region : k => {
+      target_resource_id = r.backend_id
+      weight             = local.regions[k].weight # cin 80, sin 20 (locals.tf)
+    }
+  }
 }
